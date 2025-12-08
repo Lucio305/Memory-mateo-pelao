@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memoria Mateo</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #222; /* Fondo oscuro para que resalten los colores */
+            color: white;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 100px);
+            grid-gap: 10px;
+            margin-top: 20px;
+        }
+
+        .card {
+            width: 100px;
+            height: 100px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+            cursor: pointer;
+        }
+
+        .card.flip {
+            transform: rotateY(180deg);
+        }
+
+        .front, .back {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .front {
+            background-color: #ecf0f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .back {
+            background-image: url('mateo.png'); /* Asegúrate que este sea el nombre de tu imagen */
+            background-size: cover;
+            background-position: center;
+            transform: rotateY(180deg);
+        }
+
+        /* --- COLORES INTENSOS --- */
+        /* Usamos saturate(400%) para "explotar" el color y que se note mucho */
+        
+        /* 1. Normal */
+        .color-1 .back { filter: none; } 
+        
+        /* 2. Rojo intenso */
+        .color-2 .back { filter: hue-rotate(0deg) saturate(500%) sepia(100%) saturate(500%) hue-rotate(-50deg); }
+        
+        /* 3. Verde Radioactivo */
+        .color-3 .back { filter: hue-rotate(90deg) saturate(500%) brightness(1.2); }
+        
+        /* 4. Azul Profundo */
+        .color-4 .back { filter: hue-rotate(180deg) saturate(500%); }
+        
+        /* 5. Morado/Rosa Neon */
+        .color-5 .back { filter: hue-rotate(280deg) saturate(400%); }
+        
+        /* 6. Invertido (Negativo) */
+        .color-6 .back { filter: invert(100%); }
+        
+        /* 7. Amarillo/Dorado */
+        .color-7 .back { filter: sepia(100%) saturate(500%) hue-rotate(10deg); }
+        
+        /* 8. Cian/Turquesa Brillante */
+        .color-8 .back { filter: hue-rotate(140deg) saturate(400%) brightness(1.3); }
+
+    </style>
+</head>
+<body>
+
+    <h1>Encuentra a los Mateos</h1>
+    <div class="grid" id="grid"></div>
+
+    <audio id="audio-acierto" src="Grabación (7).m4a"></audio>
+
+    <script>
+        const grid = document.getElementById('grid');
+        const audioAcierto = document.getElementById('audio-acierto');
+        
+        let cards = [];
+        let hasFlippedCard = false;
+        let lockBoard = false;
+        let firstCard, secondCard;
+
+        const cardColors = [1, 2, 3, 4, 5, 6, 7, 8];
+        let gameCards = [...cardColors, ...cardColors];
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        gameCards = shuffle(gameCards);
+
+        gameCards.forEach(colorIndex => {
+            const card = document.createElement('div');
+            card.classList.add('card', `color-${colorIndex}`);
+            card.dataset.color = colorIndex;
+
+            card.innerHTML = `
+                <div class="front">?</div>
+                <div class="back"></div>
+            `;
+
+            card.addEventListener('click', flipCard);
+            grid.appendChild(card);
+        });
+
+        function flipCard() {
+            if (lockBoard) return;
+            if (this === firstCard) return;
+
+            this.classList.add('flip');
+
+            if (!hasFlippedCard) {
+                hasFlippedCard = true;
+                firstCard = this;
+                return;
+            }
+
+            secondCard = this;
+            checkForMatch();
+        }
+
+        function checkForMatch() {
+            let isMatch = firstCard.dataset.color === secondCard.dataset.color;
+
+            isMatch ? disableCards() : unflipCards();
+        }
+
+        function disableCards() {
+            // REPRODUCIR SONIDO AQUÍ
+            // Reiniciamos el audio por si hacen parejas muy rápido
+            audioAcierto.currentTime = 0; 
+            audioAcierto.play().catch(e => console.log("Error al reproducir audio (interactúa con la página primero):", e));
+
+            firstCard.removeEventListener('click', flipCard);
+            secondCard.removeEventListener('click', flipCard);
+            resetBoard();
+        }
+
+        function unflipCards() {
+            lockBoard = true;
+            setTimeout(() => {
+                firstCard.classList.remove('flip');
+                secondCard.classList.remove('flip');
+                resetBoard();
+            }, 1000);
+        }
+
+        function resetBoard() {
+            [hasFlippedCard, lockBoard] = [false, false];
+            [firstCard, secondCard] = [null, null];
+        }
+    </script>
+</body>
+</html>
